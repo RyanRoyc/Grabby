@@ -2,10 +2,34 @@ import cv2
 import mediapipe as mp
 import math
 import time
+import pyttsx3
+import random
 
 # Initialize MediaPipe Pose Model
 mp_pose = mp.solutions.pose
 pose = mp_pose.Pose()
+
+# Initialize text-to-speech engine
+engine = pyttsx3.init()
+engine.setProperty('rate', 150)  # Adjust speaking rate
+
+# Add snarky comments list
+PUSH_UP_COMMENTS = [
+    "Oh wow, you call that a push-up?",
+    "My grandmother goes lower than that, and she's a hologram",
+    "I've seen better form in a pool noodle",
+    "Are you even trying right now?",
+    "That's cute, you're doing baby push-ups",
+    "Is your chest allergic to the floor or something?",
+    "Wow, breaking records for the most mediocre push-ups",
+    "I'm literally a computer and I could do better push-ups",
+    "Maybe try yoga instead?",
+    "That's not a push-up, that's just falling with style"
+]
+
+# Add variables for comment timing
+last_comment_time = 0
+comment_cooldown = 5  # Seconds between comments
 
 # Initialize video capture
 cap = cv2.VideoCapture(0)
@@ -47,6 +71,11 @@ def update_clicks_file(count):
     """Update the clicks file with the current count"""
     with open(CLICKS_FILE, "w") as f:
         f.write(str(count))
+
+def speak_comment(comment):
+    """Speak a comment without blocking the main loop"""
+    engine.say(comment)
+    engine.runAndWait()
 
 while cap.isOpened():
     ret, frame = cap.read()
@@ -94,10 +123,26 @@ while cap.isOpened():
                 if time.time() - last_push_up_time > push_up_pause:
                     push_ups += 1
                     last_push_up_time = time.time()  # Update the last push-up time
+                    
+                    # Add passive-aggressive feedback
+                    current_time = time.time()
+                    if current_time - last_comment_time > comment_cooldown:
+                        if angle < 165:  # Not fully extended
+                            comment = "Hmm, I guess that counts... technically."
+                        else:
+                            comment = random.choice(PUSH_UP_COMMENTS)
+                        speak_comment(comment)
+                        last_comment_time = current_time
+                    
                 is_pushing_up = True
         elif angle < 90:  # Arm bent (Bottom position)
             if is_pushing_up:
-                # We don't count again at the bottom to avoid double counting
+                # Add comment if they're not going low enough
+                if angle > 70:  # Not going low enough
+                    current_time = time.time()
+                    if current_time - last_comment_time > comment_cooldown:
+                        speak_comment("Lower! The floor won't bite, I promise.")
+                        last_comment_time = current_time
                 is_pushing_up = False
 
     # Display the current push-up count
