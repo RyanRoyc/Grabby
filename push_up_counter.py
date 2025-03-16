@@ -11,7 +11,7 @@ pose = mp_pose.Pose()
 
 # Initialize text-to-speech engine
 engine = pyttsx3.init()
-engine.setProperty('rate', 200)  # Increased speech rate from 150 to 200
+engine.setProperty('rate', 190)  # Increased speech rate from 150 to 200
 engine.startLoop(False)  # Initialize the event loop for macOS
 
 # Add different types of comments
@@ -113,7 +113,7 @@ while cap.isOpened():
     # Calculate time remaining
     elapsed_time = time.time() - start_time
     time_remaining = max(0, WORKOUT_DURATION - elapsed_time)
-    
+
     # Check if workout time is over
     if time_remaining <= 0 and workout_active:
         workout_active = False
@@ -148,14 +148,14 @@ while cap.isOpened():
                     push_ups += 1
                     last_push_up_time = time.time()
                     last_activity_time = time.time()
-                    
+
                     # Comment on successful push-up
                     if angle < 165:  # Not fully extended
                         comment = "Hmm, I guess that counts... technically."
                     else:
                         comment = random.choice(PUSH_UP_COMMENTS)
                     speak_comment(comment)
-                    
+
                 is_pushing_up = True
         elif angle < 90:  # Arm bent (Bottom position)
             if is_pushing_up:
@@ -164,7 +164,7 @@ while cap.isOpened():
                 if angle > 70:  # Not going low enough
                     speak_comment(random.choice(NOT_LOW_ENOUGH_COMMENTS))
                 is_pushing_up = False
-        
+
         # Check for inactivity
         if time.time() - last_activity_time > inactivity_threshold:
             speak_comment(random.choice(LAZY_COMMENTS))
@@ -172,7 +172,7 @@ while cap.isOpened():
 
     # Display the current push-up count
     cv2.putText(frame, f'Push-ups: {push_ups}', (50, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
-    
+
     # Display time remaining and status
     if workout_active:
         cv2.putText(frame, f'Time remaining: {int(time_remaining)}s', (50, 150), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)

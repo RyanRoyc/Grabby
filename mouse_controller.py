@@ -10,7 +10,7 @@ from PIL import Image, ImageDraw, ImageTk
 import serial
 
 # Set up serial communication
-ser = serial.Serial('/dev/cu.usbmodem1201', 9600)  # Replace 'COM10' with your Arduino's port
+ser = serial.Serial('/dev/cu.usbmodem11201', 9600)  # Replace 'COM10' with your Arduino's port
 
 # Allow time for the serial connection to initialize
 time.sleep(2)
@@ -148,6 +148,4 @@ def main():
     window.root.destroy()
 
 if __name__ == "__main__":
-    main() 
-
-    
+    main()
