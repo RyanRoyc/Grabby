@@ -5,9 +5,15 @@ import numpy as np
 from collections import deque
 import keyboard
 import time
-import win32gui
-import win32con
-import win32api
+import platform
+import sys
+
+# Import Windows-specific modules only on Windows
+SYSTEM = platform.system()
+if SYSTEM == 'Windows':
+    import win32gui
+    import win32con
+    import win32api
 
 # Initialize MediaPipe
 mp_hands = mp.solutions.hands
@@ -63,33 +69,44 @@ def is_hand_near_cursor(hand_x, hand_y, cursor_x, cursor_y, threshold=100):
     return distance < threshold
 
 def draw_screen_crosshair(x, y, color):
-    """Draw crosshair directly on screen using win32gui."""
-    # Create DC
-    hdc = win32gui.GetDC(0)
-    
-    # Create pen for drawing
-    if color == GREEN:
-        pen = win32gui.CreatePen(win32con.PS_SOLID, CROSSHAIR_THICKNESS, win32api.RGB(0, 255, 0))
-    else:  # RED
-        pen = win32gui.CreatePen(win32con.PS_SOLID, CROSSHAIR_THICKNESS, win32api.RGB(255, 0, 0))
-    
-    old_pen = win32gui.SelectObject(hdc, pen)
-    
-    # Draw horizontal line
-    win32gui.MoveToEx(hdc, x - CROSSHAIR_SIZE, y)
-    win32gui.LineTo(hdc, x + CROSSHAIR_SIZE, y)
-    
-    # Draw vertical line
-    win32gui.MoveToEx(hdc, x, y - CROSSHAIR_SIZE)
-    win32gui.LineTo(hdc, x, y + CROSSHAIR_SIZE)
-    
-    # Clean up
-    win32gui.SelectObject(hdc, old_pen)
-    win32gui.DeleteObject(pen)
-    win32gui.ReleaseDC(0, hdc)
+    """Draw crosshair directly on screen using OS-specific methods."""
+    if SYSTEM == 'Windows':
+        # Windows implementation using win32gui
+        hdc = win32gui.GetDC(0)
+        
+        # Create pen for drawing
+        if color == GREEN:
+            pen = win32gui.CreatePen(win32con.PS_SOLID, CROSSHAIR_THICKNESS, win32api.RGB(0, 255, 0))
+        else:  # RED
+            pen = win32gui.CreatePen(win32con.PS_SOLID, CROSSHAIR_THICKNESS, win32api.RGB(255, 0, 0))
+        
+        old_pen = win32gui.SelectObject(hdc, pen)
+        
+        # Draw horizontal line
+        win32gui.MoveToEx(hdc, x - CROSSHAIR_SIZE, y)
+        win32gui.LineTo(hdc, x + CROSSHAIR_SIZE, y)
+        
+        # Draw vertical line
+        win32gui.MoveToEx(hdc, x, y - CROSSHAIR_SIZE)
+        win32gui.LineTo(hdc, x, y + CROSSHAIR_SIZE)
+        
+        # Clean up
+        win32gui.SelectObject(hdc, old_pen)
+        win32gui.DeleteObject(pen)
+        win32gui.ReleaseDC(0, hdc)
+    else:
+        # For macOS and Linux, we'll skip drawing on the screen directly
+        # because it requires different system-specific libraries
+        # Cursor movement will still work, but without the crosshair
+        pass
 
 def main():
     is_dragging = False
+    
+    # Print system information
+    print(f"Running on {SYSTEM} platform")
+    if SYSTEM != 'Windows':
+        print("Note: Crosshair drawing is only supported on Windows")
     
     while True:
         success, frame = cap.read()
@@ -151,8 +168,9 @@ def main():
                     color = GREEN
                     is_dragging = False
                 
-                # Draw crosshair on screen
-                draw_screen_crosshair(int(smooth_x), int(smooth_y), color)
+                # Draw crosshair on screen (only works on Windows)
+                if SYSTEM == 'Windows':
+                    draw_screen_crosshair(int(smooth_x), int(smooth_y), color)
                 
                 # Draw cursor position for visualization in camera feed
                 cv2.circle(frame, (int(index_mcp.x * frame_width), 
