@@ -13,7 +13,7 @@ lower_color = np.array([0, 50, 50])
 upper_color = np.array([10, 255, 255])
 
 # Set up serial communication
-ser = serial.Serial('/dev/cu.usbmodem1301', 9600)  # Replace 'COM10' with your Arduino's port
+ser = serial.Serial('/dev/cu.usbmodem11201', 9600)  # Replace 'COM10' with your Arduino's port
 
 # Allow time for the serial connection to initialize
 time.sleep(2)
