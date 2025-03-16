@@ -14,50 +14,23 @@ pose = mp_pose.Pose()
 engine = pyttsx3.init()
 engine.setProperty('rate', 150)  # Adjust speaking rate
 
-# Function to speak text in a non-blocking way
-def speak_text(text):
-    def speak():
-        engine.say(text)
-        engine.runAndWait()
-    threading.Thread(target=speak, daemon=True).start()
-
-# Expanded snarky comments with different categories
-FORM_COMMENTS = [
+# Add snarky comments list
+PUSH_UP_COMMENTS = [
+    "Oh wow, you call that a push-up?",
+    "My grandmother goes lower than that, and she's a hologram",
+    "I've seen better form in a pool noodle",
+    "Are you even trying right now?",
+    "That's cute, you're doing baby push-ups",
     "Is your chest allergic to the floor or something?",
-    "That's not a push-up, that's just planking with extra wobbling",
-    "I've seen better form in a wet noodle",
-    "Are you trying to do push-ups or interpretive dance?",
-    "Your form is so bad, it should be in an abstract art museum"
+    "Wow, breaking records for the most mediocre push-ups",
+    "I'm literally a computer and I could do better push-ups",
+    "Maybe try yoga instead?",
+    "That's not a push-up, that's just falling with style"
 ]
 
-MOTIVATION_COMMENTS = [
-    "My CPU gets more exercise running this program",
-    "Even Windows updates are more productive than this",
-    "You're moving with all the energy of a sleepy sloth",
-    "Did you forget to charge your batteries this morning?",
-    "Is this your first day having arms?"
-]
-
-COUNTING_COMMENTS = [
-    "That's {count} push-ups... allegedly",
-    "Push-up #{count}, or as I call it, a gravity-assisted chest bounce",
-    "Wow, {count} already? Are you counting in binary?",
-    "That's {count}... in your dreams maybe",
-    "Let's generously call that {count} push-ups"
-]
-
-TIRED_COMMENTS = [
-    "Taking a break already? I thought humans had endurance",
-    "Oh good, a break. My facial recognition was getting bored",
-    "Need a nap? I've only been watching for {duration} seconds",
-    "My cooling fan gets more exercise than this",
-    "I could render a 3D model of better push-ups in this time"
-]
-
-# Add variables for comment timing and variety
+# Add variables for comment timing
 last_comment_time = 0
 comment_cooldown = 5  # Seconds between comments
-last_comment_type = None
 
 # Initialize video capture
 cap = cv2.VideoCapture(0)
@@ -100,27 +73,16 @@ def update_clicks_file(count):
     with open(CLICKS_FILE, "w") as f:
         f.write(str(count))
 
-def get_random_comment(push_ups, workout_duration):
-    global last_comment_type
+def speak_comment(comment):
+    """Speak a comment in a separate thread"""
+    def speak_worker():
+        engine.say(comment)
+        engine.runAndWait()
     
-    # List of available comment types
-    comment_types = ['form', 'motivation', 'counting', 'tired']
-    # Remove the last used type to avoid repetition
-    if last_comment_type in comment_types:
-        comment_types.remove(last_comment_type)
-    
-    # Choose a random comment type
-    comment_type = random.choice(comment_types)
-    last_comment_type = comment_type
-    
-    if comment_type == 'form':
-        return random.choice(FORM_COMMENTS)
-    elif comment_type == 'motivation':
-        return random.choice(MOTIVATION_COMMENTS)
-    elif comment_type == 'counting':
-        return random.choice(COUNTING_COMMENTS).format(count=push_ups)
-    else:  # tired
-        return random.choice(TIRED_COMMENTS).format(duration=int(workout_duration))
+    # Create and start a new thread for speaking
+    thread = threading.Thread(target=speak_worker)
+    thread.daemon = True  # Make thread daemon so it closes with main program
+    thread.start()
 
 while cap.isOpened():
     ret, frame = cap.read()
@@ -171,9 +133,12 @@ while cap.isOpened():
                     
                     # Add passive-aggressive feedback
                     current_time = time.time()
-                    if current_time - last_comment_time >= comment_cooldown:
-                        comment = get_random_comment(push_ups, current_time - start_time)
-                        speak_text(comment)  # Use the non-blocking speak function
+                    if current_time - last_comment_time > comment_cooldown:
+                        if angle < 165:  # Not fully extended
+                            comment = "Hmm, I guess that counts... technically."
+                        else:
+                            comment = random.choice(PUSH_UP_COMMENTS)
+                        speak_comment(comment)
                         last_comment_time = current_time
                     
                 is_pushing_up = True
@@ -182,8 +147,8 @@ while cap.isOpened():
                 # Add comment if they're not going low enough
                 if angle > 70:  # Not going low enough
                     current_time = time.time()
-                    if current_time - last_comment_time >= comment_cooldown:
-                        speak_text("Lower! The floor won't bite, I promise.")
+                    if current_time - last_comment_time > comment_cooldown:
+                        speak_comment("Lower! The floor won't bite, I promise.")
                         last_comment_time = current_time
                 is_pushing_up = False
 
