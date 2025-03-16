@@ -4,6 +4,70 @@ import math
 import time
 import pyttsx3
 import random
+import sys
+
+# Add after imports
+import random
+import sys
+
+def generate_math_problem():
+    """Generate a random math problem and return problem and answer"""
+    operations = ['+', '-', '*']
+    num1 = random.randint(1, 20)
+    num2 = random.randint(1, 20)
+    operation = random.choice(operations)
+    
+    problem = f"{num1} {operation} {num2}"
+    if operation == '+':
+        answer = num1 + num2
+    elif operation == '-':
+        answer = num1 - num2
+    else:
+        answer = num1 * num2
+    
+    return problem, answer
+
+def verify_human():
+    """Make user solve math problems to prove they're "human" """
+    print("\n=== HUMAN VERIFICATION REQUIRED ===")
+    print("Solve these math problems to prove you're smart enough to do push-ups.")
+    
+    problems_to_solve = 3
+    for i in range(problems_to_solve):
+        problem, correct_answer = generate_math_problem()
+        attempts = 0
+        max_attempts = 3
+        
+        while attempts < max_attempts:
+            try:
+                print(f"\nProblem {i+1}/{problems_to_solve}: {problem} = ?")
+                user_answer = int(input("Your answer: "))
+                
+                if user_answer == correct_answer:
+                    print("Correct! You might actually have a brain!")
+                    break
+                else:
+                    attempts += 1
+                    remaining = max_attempts - attempts
+                    if remaining > 0:
+                        print(f"Wrong! {remaining} attempts remaining before we assume you're a robot (or just bad at math)")
+                    else:
+                        print("That's it. You've failed the human test. Maybe try counting on your fingers next time!")
+                        sys.exit()
+                        
+            except ValueError:
+                print("That's not even a number. Are you sure you should be exercising?")
+                attempts += 1
+        
+        if attempts == max_attempts:
+            print("\nFAILED VERIFICATION: Too many wrong answers. Maybe stick to sleeping.")
+            sys.exit()
+    
+    print("\nCongratulations! You've proven you have at least basic arithmetic skills!")
+    print("Now let's see if you can count push-ups as well as you can count numbers...\n")
+
+# Add this line right before initializing video capture
+verify_human()
 
 # Initialize MediaPipe Pose Model
 mp_pose = mp.solutions.pose
