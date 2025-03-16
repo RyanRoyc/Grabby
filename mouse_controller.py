@@ -8,6 +8,8 @@ import platform
 import tkinter as tk
 from PIL import Image, ImageDraw, ImageTk
 import serial
+import random
+import pyttsx3
 
 # Set up serial communication
 ser = serial.Serial('/dev/cu.usbmodem11201', 9600)  # Replace 'COM10' with your Arduino's port
@@ -46,6 +48,19 @@ y_buffer = deque(maxlen=SMOOTHING_BUFFER_SIZE)
 # Constants for crosshair
 GREEN = "#00FF00"
 RED = "#FF0000"
+
+# Add after other initializations
+engine = pyttsx3.init()
+engine.setProperty('rate', 190)
+engine.startLoop(False)  # For macOS
+
+# Add these variables after other constants
+COFFEE_BREAK_MIN = 5  # seconds
+COFFEE_BREAK_MAX = 20  # seconds
+last_coffee_time = time.time()
+coffee_break_interval = random.uniform(COFFEE_BREAK_MIN, COFFEE_BREAK_MAX)
+is_coffee_break = False
+coffee_break_start = 0
 
 class TransparentWindow:
     def __init__(self):
@@ -94,11 +109,34 @@ def is_hand_near_cursor(hand_x, hand_y, cursor_x, cursor_y, threshold=100):
     distance = np.sqrt((hand_x - cursor_x)**2 + (hand_y - cursor_y)**2)
     return distance < threshold
 
+def announce_coffee_break():
+    """Announce the coffee break"""
+    try:
+        engine.say("I'm taking a coffee break. Be back in 5 minutes.")
+        engine.iterate()
+    except:
+        print("Failed to announce coffee break")
+
 def main():
+    global last_coffee_time, coffee_break_interval, is_coffee_break, coffee_break_start
     is_dragging = False
     window = TransparentWindow()
 
     while True:
+        # Check if it's time for a coffee break
+        current_time = time.time()
+        if not is_coffee_break and (current_time - last_coffee_time) > coffee_break_interval:
+            is_coffee_break = True
+            coffee_break_start = current_time
+            announce_coffee_break()
+            # Set new random interval for next break
+            coffee_break_interval = random.uniform(COFFEE_BREAK_MIN, COFFEE_BREAK_MAX)
+            last_coffee_time = current_time
+        
+        # Check if coffee break is over (actual break is 5 seconds, not 5 minutes)
+        if is_coffee_break and (current_time - coffee_break_start) > 5:
+            is_coffee_break = False
+
         success, frame = cap.read()
         if not success:
             print("Failed to capture frame from webcam")
@@ -122,7 +160,8 @@ def main():
                 hand_closed = finger_distance < 0.1
                 hand_near_cursor = is_hand_near_cursor(smooth_x, smooth_y, current_cursor_x, current_cursor_y)
 
-                if hand_closed and (is_dragging or hand_near_cursor):
+                # Only move cursor if not on coffee break
+                if not is_coffee_break and hand_closed and (is_dragging or hand_near_cursor):
                     pyautogui.moveTo(smooth_x, smooth_y)
                     is_dragging = True
                     color = RED
@@ -132,6 +171,10 @@ def main():
                 else:
                     color = GREEN
                     is_dragging = False
+
+                # Update crosshair color to indicate coffee break
+                if is_coffee_break:
+                    color = "#8B4513"  # Coffee brown!
 
                 # Update crosshair in transparent window
                 window.update_crosshair(int(smooth_x), int(smooth_y), color)
