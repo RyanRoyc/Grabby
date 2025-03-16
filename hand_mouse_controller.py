@@ -48,9 +48,14 @@ def calculate_finger_distance(hand_landmarks):
     )
     return distance
 
+def is_hand_near_cursor(hand_x, hand_y, cursor_x, cursor_y, threshold=100):
+    """Check if hand position is within threshold pixels of cursor position."""
+    distance = np.sqrt((hand_x - cursor_x)**2 + (hand_y - cursor_y)**2)
+    print(f"Distance to cursor: {distance}")  # Debug print
+    return distance < threshold
+
 def main():
     # Previous cursor position for drag detection
-    prev_x, prev_y = pyautogui.position()
     is_dragging = False
     
     while True:
@@ -58,6 +63,9 @@ def main():
         if not success:
             print("Failed to capture frame from webcam")
             break
+
+        # Get current cursor position
+        current_cursor_x, current_cursor_y = pyautogui.position()
 
         # Flip the frame horizontally for a later selfie-view display
         frame = cv2.flip(frame, 1)
@@ -85,27 +93,40 @@ def main():
                 # Apply smoothing
                 smooth_x, smooth_y = get_smoothed_coordinates(x, y)
                 
-                # Move cursor
-                pyautogui.moveTo(smooth_x, smooth_y)
-                
                 # Check for hand gesture (closed fist)
                 finger_distance = calculate_finger_distance(hand_landmarks)
+                print(f"Finger distance: {finger_distance}")  # Debug print
                 
-                # Threshold for considering the hand as closed
-                if finger_distance < 0.1:  # Adjust this threshold as needed
+                # Check if hand is closed (fist) and near current cursor
+                hand_closed = finger_distance < 0.1  # Adjust threshold as needed
+                hand_near_cursor = is_hand_near_cursor(smooth_x, smooth_y, current_cursor_x, current_cursor_y, threshold=200)
+                
+                print(f"Hand closed: {hand_closed}, Hand near cursor: {hand_near_cursor}")  # Debug print
+                
+                if hand_closed:  # Simplified condition for testing
+                    # Move cursor only when hand is closed
+                    pyautogui.moveTo(smooth_x, smooth_y)
                     if not is_dragging:
+                        print("Starting drag")  # Debug print
                         pyautogui.mouseDown()
                         is_dragging = True
                 else:
                     if is_dragging:
+                        print("Ending drag")  # Debug print
                         pyautogui.mouseUp()
                         is_dragging = False
                 
-                # Draw cursor position for visualization
+                # Draw cursor position and debug info for visualization
                 cv2.circle(frame, (int(index_mcp.x * frame_width), 
                                  int(index_mcp.y * frame_height)), 
                           10, (0, 255, 0), -1)
-        
+                
+                # Draw debug text
+                cv2.putText(frame, f"Finger distance: {finger_distance:.3f}", (10, 30), 
+                           cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                cv2.putText(frame, f"Hand closed: {hand_closed}", (10, 70), 
+                           cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+
         # Display the frame
         cv2.imshow('Hand Mouse Controller', frame)
         
