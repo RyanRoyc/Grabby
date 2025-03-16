@@ -5,6 +5,8 @@ import numpy as np
 from collections import deque
 import time
 import platform
+import tkinter as tk
+from PIL import Image, ImageDraw, ImageTk
 
 # Identify OS
 SYSTEM = platform.system()
@@ -35,8 +37,38 @@ x_buffer = deque(maxlen=SMOOTHING_BUFFER_SIZE)
 y_buffer = deque(maxlen=SMOOTHING_BUFFER_SIZE)
 
 # Constants for crosshair
-GREEN = (0, 255, 0)
-RED = (0, 0, 255)
+GREEN = "#00FF00"
+RED = "#FF0000"
+
+class TransparentWindow:
+    def __init__(self):
+        self.root = tk.Tk()
+        self.root.attributes("-alpha", 0.5)  # Set window transparency
+        self.root.attributes("-topmost", True)  # Keep window on top
+        self.root.attributes("-fullscreen", True)
+        self.root.overrideredirect(True)  # Remove window decorations
+        
+        # Make window transparent
+        self.root.config(bg='systemTransparent')
+        self.root.attributes("-transparent", True)
+        
+        # Create canvas for drawing
+        self.canvas = tk.Canvas(
+            self.root,
+            width=SCREEN_WIDTH,
+            height=SCREEN_HEIGHT,
+            highlightthickness=0,
+            bg='systemTransparent'
+        )
+        self.canvas.pack()
+        
+    def update_crosshair(self, x, y, color):
+        self.canvas.delete("all")
+        # Draw vertical line
+        self.canvas.create_line(x, 0, x, SCREEN_HEIGHT, fill=color, width=2)
+        # Draw horizontal line
+        self.canvas.create_line(0, y, SCREEN_WIDTH, y, fill=color, width=2)
+        self.root.update()
 
 def get_smoothed_coordinates(x, y):
     """Apply moving average filter to coordinates."""
@@ -48,7 +80,6 @@ def calculate_finger_distance(hand_landmarks):
     """Calculate distance between thumb tip and index finger tip."""
     thumb_tip = hand_landmarks.landmark[mp_hands.HandLandmark.THUMB_TIP]
     index_tip = hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP]
-
     return np.sqrt((thumb_tip.x - index_tip.x)**2 + (thumb_tip.y - index_tip.y)**2)
 
 def is_hand_near_cursor(hand_x, hand_y, cursor_x, cursor_y, threshold=100):
@@ -56,18 +87,9 @@ def is_hand_near_cursor(hand_x, hand_y, cursor_x, cursor_y, threshold=100):
     distance = np.sqrt((hand_x - cursor_x)**2 + (hand_y - cursor_y)**2)
     return distance < threshold
 
-def draw_fullscreen_crosshair(frame, x, y, color):
-    """Draw crosshair across the entire screen in OpenCV frame."""
-    frame_height, frame_width, _ = frame.shape
-    cv2.line(frame, (x, 0), (x, frame_height), color, 2)  # Vertical line
-    cv2.line(frame, (0, y), (frame_width, y), color, 2)  # Horizontal line
-
 def main():
     is_dragging = False
-
-    print(f"Running on {SYSTEM} platform")
-    if SYSTEM != 'Windows':
-        print("Crosshair will be drawn in the camera feed instead of on the screen.")
+    window = TransparentWindow()
 
     while True:
         success, frame = cap.read()
@@ -80,18 +102,14 @@ def main():
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
         results = hands.process(rgb_frame)
-        frame_height, frame_width, _ = frame.shape
 
         if results.multi_hand_landmarks:
             for hand_landmarks in results.multi_hand_landmarks:
-                mp_draw.draw_landmarks(frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
-
                 index_mcp = hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_MCP]
                 x = int(index_mcp.x * SCREEN_WIDTH)
                 y = int(index_mcp.y * SCREEN_HEIGHT)
 
                 smooth_x, smooth_y = get_smoothed_coordinates(x, y)
-                print(f"Hand position - X: {smooth_x:.2f}, Y: {smooth_y:.2f}")
 
                 finger_distance = calculate_finger_distance(hand_landmarks)
                 hand_closed = finger_distance < 0.1
@@ -108,11 +126,8 @@ def main():
                     color = GREEN
                     is_dragging = False
 
-                # Draw fullscreen crosshair on OpenCV frame
-                draw_fullscreen_crosshair(frame, int(index_mcp.x * frame_width), int(index_mcp.y * frame_height), color)
-
-        # Display the frame
-        cv2.imshow('Hand Mouse Controller', frame)
+                # Update crosshair in transparent window
+                window.update_crosshair(int(smooth_x), int(smooth_y), color)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
@@ -121,6 +136,7 @@ def main():
 
     cap.release()
     cv2.destroyAllWindows()
+    window.root.destroy()
 
 if __name__ == "__main__":
     main()
