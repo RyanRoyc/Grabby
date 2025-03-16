@@ -1,11 +1,22 @@
 import cv2
 import numpy as np
+import serial
 import time
 
+# Initialize webcam
 cap = cv2.VideoCapture(0)
 
+# Define the color range for tracking (e.g., a specific color the person is wearing)
+# These values are for a specific color range in HSV color space
+# Adjust these values based on your needs
 lower_color = np.array([0, 50, 50])
 upper_color = np.array([10, 255, 255])
+
+# Set up serial communication
+ser = serial.Serial('/dev/cu.usbmodem1301', 9600)  # Replace 'COM10' with your Arduino's port
+
+# Allow time for the serial connection to initialize
+time.sleep(2)
 
 while True:
     # Capture frame-by-frame
@@ -39,6 +50,9 @@ while True:
         center_x = x + w // 2
         center_y = y + h // 2
 
+        # Send the coordinates to Arduino
+        ser.write(f"{center_x},{center_y}\n".encode())
+
         # Draw bounding box and center point
         cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
         cv2.circle(frame, (center_x, center_y), 5, (0, 0, 255), -1)
@@ -56,3 +70,4 @@ while True:
 # Release resources
 cap.release()
 cv2.destroyAllWindows()
+ser.close()
