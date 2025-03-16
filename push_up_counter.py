@@ -4,7 +4,6 @@ import math
 import time
 import pyttsx3
 import random
-import threading
 
 # Initialize MediaPipe Pose Model
 mp_pose = mp.solutions.pose
@@ -13,6 +12,7 @@ pose = mp_pose.Pose()
 # Initialize text-to-speech engine
 engine = pyttsx3.init()
 engine.setProperty('rate', 150)  # Adjust speaking rate
+engine.startLoop(False)  # Initialize the event loop for macOS
 
 # Add snarky comments list
 PUSH_UP_COMMENTS = [
@@ -74,15 +74,12 @@ def update_clicks_file(count):
         f.write(str(count))
 
 def speak_comment(comment):
-    """Speak a comment in a separate thread"""
-    def speak_worker():
+    """Speak a comment without blocking the main loop"""
+    try:
         engine.say(comment)
-        engine.runAndWait()
-    
-    # Create and start a new thread for speaking
-    thread = threading.Thread(target=speak_worker)
-    thread.daemon = True  # Make thread daemon so it closes with main program
-    thread.start()
+        engine.iterate()  # For macOS, use iterate instead of runAndWait
+    except:
+        print(f"Speech failed: {comment}")  # Fallback if speech fails
 
 while cap.isOpened():
     ret, frame = cap.read()
@@ -131,15 +128,12 @@ while cap.isOpened():
                     push_ups += 1
                     last_push_up_time = time.time()  # Update the last push-up time
                     
-                    # Add passive-aggressive feedback
-                    current_time = time.time()
-                    if current_time - last_comment_time > comment_cooldown:
-                        if angle < 165:  # Not fully extended
-                            comment = "Hmm, I guess that counts... technically."
-                        else:
-                            comment = random.choice(PUSH_UP_COMMENTS)
-                        speak_comment(comment)
-                        last_comment_time = current_time
+                    # Always give a comment after each push-up
+                    if angle < 165:  # Not fully extended
+                        comment = "Hmm, I guess that counts... technically."
+                    else:
+                        comment = random.choice(PUSH_UP_COMMENTS)
+                    speak_comment(comment)
                     
                 is_pushing_up = True
         elif angle < 90:  # Arm bent (Bottom position)
@@ -184,3 +178,6 @@ if workout_active:
 # Release resources
 cap.release()
 cv2.destroyAllWindows()
+
+# Add before the final cleanup
+engine.endLoop()  # Clean up the speech engine
