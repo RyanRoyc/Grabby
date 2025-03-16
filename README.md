@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Hand Mouse Controller
 
 This Python application enables hand gesture-based mouse control using your webcam. It tracks your hand movements and allows you to control the mouse cursor using natural hand gestures.
@@ -58,3 +59,6 @@ If the cursor movement is too sensitive or not responsive enough, you can adjust
 - `SMOOTHING_BUFFER_SIZE`: Increase for smoother but slower movement
 - `min_detection_confidence` and `min_tracking_confidence`: Adjust for better hand detection
 - Finger distance threshold: Modify the `0.1` value in the `finger_distance` check for different click sensitivity 
+=======
+# Grabby
+>>>>>>> 89b0c0091a27966e9b54264406fa8e0676def95b
