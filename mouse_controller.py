@@ -7,6 +7,13 @@ import time
 import platform
 import tkinter as tk
 from PIL import Image, ImageDraw, ImageTk
+import serial
+
+# Set up serial communication
+ser = serial.Serial('/dev/cu.usbmodem1201', 9600)  # Replace 'COM10' with your Arduino's port
+
+# Allow time for the serial connection to initialize
+time.sleep(2)
 
 # Identify OS
 SYSTEM = platform.system()
@@ -47,11 +54,11 @@ class TransparentWindow:
         self.root.attributes("-topmost", True)  # Keep window on top
         self.root.attributes("-fullscreen", True)
         self.root.overrideredirect(True)  # Remove window decorations
-        
+
         # Make window transparent
         self.root.config(bg='systemTransparent')
         self.root.attributes("-transparent", True)
-        
+
         # Create canvas for drawing
         self.canvas = tk.Canvas(
             self.root,
@@ -61,7 +68,7 @@ class TransparentWindow:
             bg='systemTransparent'
         )
         self.canvas.pack()
-        
+
     def update_crosshair(self, x, y, color):
         self.canvas.delete("all")
         # Draw vertical line
@@ -128,6 +135,8 @@ def main():
 
                 # Update crosshair in transparent window
                 window.update_crosshair(int(smooth_x), int(smooth_y), color)
+
+                ser.write(f"{x},{y}\n".encode())
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break

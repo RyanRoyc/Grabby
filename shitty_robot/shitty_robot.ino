@@ -22,7 +22,7 @@ void loop() {
       int centerY = data.substring(commaIndex + 1).toInt();
 
       // Map the coordinates to servo angles
-      targetPanAngle = map(centerX, 0, 1920, 0, 180);
+      targetPanAngle = map(centerX, 0, 1920, 180, 0);
       targetTiltAngle = map(centerY, 0, 1080, 0, 180);
     }
   }
