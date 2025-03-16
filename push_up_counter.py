@@ -11,10 +11,10 @@ pose = mp_pose.Pose()
 
 # Initialize text-to-speech engine
 engine = pyttsx3.init()
-engine.setProperty('rate', 150)  # Adjust speaking rate
+engine.setProperty('rate', 200)  # Increased speech rate from 150 to 200
 engine.startLoop(False)  # Initialize the event loop for macOS
 
-# Add snarky comments list
+# Add different types of comments
 PUSH_UP_COMMENTS = [
     "Oh wow, you call that a push-up?",
     "My grandmother goes lower than that, and she's a hologram",
@@ -27,6 +27,27 @@ PUSH_UP_COMMENTS = [
     "Maybe try yoga instead?",
     "That's not a push-up, that's just falling with style"
 ]
+
+LAZY_COMMENTS = [
+    "Did you fall asleep down there?",
+    "Taking a nap already?",
+    "Too tired? Maybe try knitting instead",
+    "I'm getting bored watching you rest",
+    "Are we done here or what?",
+    "Your motivation is as absent as your gains"
+]
+
+NOT_LOW_ENOUGH_COMMENTS = [
+    "Lower! The floor won't bite, I promise",
+    "That's barely a quarter rep",
+    "My pet rock goes lower than that",
+    "Are you afraid of the ground?",
+    "That's not even half way!"
+]
+
+# Variables for tracking inactivity
+last_activity_time = time.time()
+inactivity_threshold = 5  # 5 seconds before considering inactive
 
 # Add variables for comment timing
 last_comment_time = 0
@@ -123,12 +144,12 @@ while cap.isOpened():
         # Push-up detection logic
         if angle > 160:  # Arm extended (Top position)
             if not is_pushing_up:
-                # Check if enough time has passed to count another push-up
                 if time.time() - last_push_up_time > push_up_pause:
                     push_ups += 1
-                    last_push_up_time = time.time()  # Update the last push-up time
+                    last_push_up_time = time.time()
+                    last_activity_time = time.time()
                     
-                    # Always give a comment after each push-up
+                    # Comment on successful push-up
                     if angle < 165:  # Not fully extended
                         comment = "Hmm, I guess that counts... technically."
                     else:
@@ -138,13 +159,16 @@ while cap.isOpened():
                 is_pushing_up = True
         elif angle < 90:  # Arm bent (Bottom position)
             if is_pushing_up:
-                # Add comment if they're not going low enough
+                last_activity_time = time.time()
+                # Comment if not going low enough
                 if angle > 70:  # Not going low enough
-                    current_time = time.time()
-                    if current_time - last_comment_time > comment_cooldown:
-                        speak_comment("Lower! The floor won't bite, I promise.")
-                        last_comment_time = current_time
+                    speak_comment(random.choice(NOT_LOW_ENOUGH_COMMENTS))
                 is_pushing_up = False
+        
+        # Check for inactivity
+        if time.time() - last_activity_time > inactivity_threshold:
+            speak_comment(random.choice(LAZY_COMMENTS))
+            last_activity_time = time.time()  # Reset timer
 
     # Display the current push-up count
     cv2.putText(frame, f'Push-ups: {push_ups}', (50, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
