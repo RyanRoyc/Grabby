@@ -1,6 +1,7 @@
 # AI Fitness Gamification System
+The annoying, janky, useless, and dumb project we made for Scrapyard Hacks Toronto, placing 4th against over 60 competitors! 
 
-A unique fitness gamification system that combines push-up tracking, voice control, and robotic interaction. The system rewards users with "clicks" for completing push-ups, which can then be used to control the computer through voice commands or hand gestures.
+Project --> A unique fitness gamification system that combines push-up tracking, voice control, and robotic interaction. The system rewards users with "clicks" for completing push-ups, which can then be used to control the computer through voice commands or hand gestures.
 
 ## Features
 
@@ -22,7 +23,7 @@ A unique fitness gamification system that combines push-up tracking, voice contr
 
 ### Robotic Pointer Integration
 - Arduino-based servo control system
-- Physical pointer that follows cursor movement
+- Physical pointer that follows cursor movement (shines a laser in your face while you drag the cursor)
 - Smooth motion interpolation
 
 ## Requirements
